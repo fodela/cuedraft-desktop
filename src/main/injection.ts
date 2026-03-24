@@ -1,5 +1,6 @@
 import { clipboard } from 'electron'
 import { execSync } from 'child_process'
+import * as robot from '@jitsi/robotjs'
 import { getPlatform, hasXdotool, hasWlCopy } from './platform'
 
 const MAX_CONTENT_LENGTH = 10_000
@@ -13,33 +14,8 @@ function sanitize(text: string): string {
   return clean
 }
 
-function pasteViaClipboard(text: string): void {
-  const previousClipboard = clipboard.readText()
-  clipboard.writeText(text)
-
-  try {
-    const robot = require('@jitsi/robotjs')
-    // Release any held modifiers first
-    robot.keyToggle('shift', 'up')
-    robot.keyToggle('control', 'up')
-    // Small delay to ensure modifiers are released
-    robot.setKeyboardDelay(50)
-    robot.keyTap('v', 'control')
-  } catch {
-    // If robotjs fails, at least the text is on the clipboard
-    console.warn('[inject] robotjs Ctrl+V failed, text is on clipboard')
-  }
-
-  // Restore clipboard after a delay
-  setTimeout(() => {
-    clipboard.writeText(previousClipboard)
-  }, 500)
-}
-
 function typeViaRobotjs(text: string): boolean {
   try {
-    const robot = require('@jitsi/robotjs')
-    // Release modifiers that may still be held from hotkey
     robot.keyToggle('shift', 'up')
     robot.keyToggle('control', 'up')
     robot.setKeyboardDelay(10)
@@ -62,6 +38,18 @@ function typeViaXdotool(text: string): boolean {
   }
 }
 
+function pasteViaClipboard(text: string): void {
+  clipboard.writeText(text)
+  try {
+    robot.keyToggle('shift', 'up')
+    robot.keyToggle('control', 'up')
+    robot.setKeyboardDelay(50)
+    robot.keyTap('v', 'control')
+  } catch {
+    console.warn('[inject] robotjs Ctrl+V failed, text is on clipboard')
+  }
+}
+
 function pasteViaWlCopy(text: string): void {
   if (hasWlCopy()) {
     try {
@@ -74,7 +62,6 @@ function pasteViaWlCopy(text: string): void {
   }
 
   try {
-    const robot = require('@jitsi/robotjs')
     robot.keyToggle('shift', 'up')
     robot.keyToggle('control', 'up')
     robot.setKeyboardDelay(50)

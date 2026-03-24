@@ -12,7 +12,6 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     inputRef.current?.focus()
   }, [])
 
-  // Re-focus when picker is shown
   useEffect(() => {
     window.cuedraft.picker.onShow(() => {
       inputRef.current?.focus()
@@ -23,7 +22,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
   return (
     <div className="relative">
       <svg
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-t3"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -41,9 +40,9 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search templates…"
-        className="w-full bg-zinc-800 text-zinc-100 text-sm rounded-lg pl-10 pr-12 py-2.5 border border-zinc-700 focus:border-blue-500 focus:outline-none placeholder:text-zinc-500"
+        className="w-full bg-raised text-t1 text-sm rounded-lg pl-10 pr-12 py-2.5 border border-mid focus:border-accent focus:outline-none placeholder:text-t3"
       />
-      <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 bg-zinc-700 px-1.5 py-0.5 rounded">
+      <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-t3 bg-raised px-1.5 py-0.5 rounded border border-low">
         Esc
       </kbd>
     </div>

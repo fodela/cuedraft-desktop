@@ -4,7 +4,7 @@ import { join } from 'path'
 
 let db: Database.Database | null = null
 
-const SCHEMA = `
+export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS templates (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   title     TEXT    NOT NULL,
@@ -260,4 +260,9 @@ export function closeDatabase(): void {
     db.close()
     db = null
   }
+}
+
+/** For testing only — inject a pre-configured in-memory database. */
+export function _setDatabaseForTesting(testDb: Database.Database): void {
+  db = testDb
 }

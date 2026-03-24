@@ -1,1 +1,80 @@
 @import "tailwindcss";
+
+/* ── Theme tokens ───────────────────────────────── */
+:root {
+  --c-bg:      #070d1a;
+  --c-surface: #0b1424;
+  --c-raised:  #0d1a2e;
+  --c-t1: #f4f4f5;
+  --c-t2: #a1a1aa;
+  --c-t3: #71717a;
+  --c-t4: #52525b;
+  --c-bdr:    rgba(255,255,255,0.05);
+  --c-bdr-hi: rgba(255,255,255,0.10);
+  --c-accent: #14b8a6;
+  --c-adim:   rgba(20,184,166,0.15);
+}
+
+:root[data-theme="light"] {
+  --c-bg:      #eef2f7;
+  --c-surface: #ffffff;
+  --c-raised:  #f4f7fb;
+  --c-t1: #0f172a;
+  --c-t2: #475569;
+  --c-t3: #94a3b8;
+  --c-t4: #cbd5e1;
+  --c-bdr:    rgba(0,0,0,0.07);
+  --c-bdr-hi: rgba(0,0,0,0.13);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --c-bg:      #eef2f7;
+    --c-surface: #ffffff;
+    --c-raised:  #f4f7fb;
+    --c-t1: #0f172a;
+    --c-t2: #475569;
+    --c-t3: #94a3b8;
+    --c-t4: #cbd5e1;
+    --c-bdr:    rgba(0,0,0,0.07);
+    --c-bdr-hi: rgba(0,0,0,0.13);
+  }
+}
+
+/* ── Font ───────────────────────────────────────── */
+:root { --c-font: system-ui, ui-sans-serif, sans-serif; }
+body  { font-family: var(--c-font); }
+
+/* ── Border radius overrides ────────────────────── */
+/* Outside @layer so they beat Tailwind's utilities  */
+:root[data-radius="sharp"] .rounded,
+:root[data-radius="sharp"] .rounded-sm,
+:root[data-radius="sharp"] .rounded-md,
+:root[data-radius="sharp"] .rounded-lg,
+:root[data-radius="sharp"] .rounded-xl,
+:root[data-radius="sharp"] .rounded-2xl { border-radius: 2px; }
+
+:root[data-radius="round"] .rounded    { border-radius: 8px; }
+:root[data-radius="round"] .rounded-sm { border-radius: 6px; }
+:root[data-radius="round"] .rounded-md { border-radius: 10px; }
+:root[data-radius="round"] .rounded-lg { border-radius: 16px; }
+:root[data-radius="round"] .rounded-xl { border-radius: 20px; }
+:root[data-radius="round"] .rounded-2xl { border-radius: 24px; }
+
+/* ── Semantic utilities ─────────────────────────── */
+@layer utilities {
+  .bg-base       { background-color: var(--c-bg); }
+  .bg-surface    { background-color: var(--c-surface); }
+  .bg-raised     { background-color: var(--c-raised); }
+  .text-t1       { color: var(--c-t1); }
+  .text-t2       { color: var(--c-t2); }
+  .text-t3       { color: var(--c-t3); }
+  .text-t4       { color: var(--c-t4); }
+  .border-low    { border-color: var(--c-bdr); }
+  .border-mid    { border-color: var(--c-bdr-hi); }
+  .text-accent   { color: var(--c-accent); }
+  .bg-accent     { background-color: var(--c-accent); }
+  .bg-accent-dim { background-color: var(--c-adim); }
+  .border-accent { border-color: var(--c-accent); }
+  .ring-accent   { --tw-ring-color: var(--c-accent); }
+}

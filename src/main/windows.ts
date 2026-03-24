@@ -1,6 +1,10 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 
+const iconPath = process.platform === 'win32'
+  ? join(__dirname, '../../assets/logo.ico')
+  : join(__dirname, '../../assets/logo.png')
+
 let pickerWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 
@@ -18,6 +22,7 @@ export function createPickerWindow(): BrowserWindow {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
+    icon: iconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -86,6 +91,7 @@ export function createSettingsWindow(): BrowserWindow {
     width: 1100,
     height: 720,
     show: false,
+    icon: iconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

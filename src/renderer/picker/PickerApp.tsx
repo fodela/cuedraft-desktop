@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { applyAllSettings } from '../theme'
 import { SearchBar } from './SearchBar'
 import { CategoryFilter } from './CategoryFilter'
 import { TemplateChip } from './TemplateChip'
@@ -23,20 +24,20 @@ export function PickerApp() {
 
   const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null)
 
-  // Reset selection when templates change
   useEffect(() => {
     resetSelection()
   }, [templates, resetSelection])
 
-  // Listen for picker show — reset state
   useEffect(() => {
     window.cuedraft.picker.onShow(() => {
+      // Re-apply settings each time the picker is shown so changes made in
+      // the Settings window (different renderer process) are picked up.
+      window.cuedraft.settings.get().then((s) => applyAllSettings(s))
       setPendingTemplate(null)
       reset()
     })
   }, [reset])
 
-  // All templates go through the edit view before inserting
   const handleSelect = useCallback((template: Template) => {
     setPendingTemplate(template)
   }, [])
@@ -53,7 +54,7 @@ export function PickerApp() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (pendingTemplate) return // EditBeforeInsertView owns all keys
+      if (pendingTemplate) return
 
       if (e.key === 'Enter' && templates.length > 0) {
         e.preventDefault()
@@ -67,7 +68,7 @@ export function PickerApp() {
 
   return (
     <div
-      className={`relative w-[540px] ${pendingTemplate ? 'h-[540px]' : 'max-h-[520px]'} bg-zinc-900 rounded-xl shadow-2xl border border-zinc-700 flex flex-col overflow-hidden`}
+      className={`relative w-[540px] ${pendingTemplate ? 'h-[540px]' : 'max-h-[520px]'} bg-surface rounded-xl shadow-2xl border border-mid flex flex-col overflow-hidden`}
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
@@ -79,12 +80,10 @@ export function PickerApp() {
         />
       ) : (
         <>
-          {/* Search */}
           <div className="p-3 pb-0">
             <SearchBar value={searchQuery} onChange={search} />
           </div>
 
-          {/* Category filter */}
           <div className="px-3 pt-2">
             <CategoryFilter
               categories={categories}
@@ -93,11 +92,10 @@ export function PickerApp() {
             />
           </div>
 
-          {/* Template grid */}
           <div className="flex-1 overflow-y-auto p-3">
             {templates.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-zinc-500 text-sm">No templates found</p>
+                <p className="text-t3 text-sm">No templates found</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
@@ -116,8 +114,7 @@ export function PickerApp() {
             )}
           </div>
 
-          {/* Bottom hint bar */}
-          <div className="px-3 py-2 border-t border-zinc-800 flex items-center gap-3 text-[10px] text-zinc-500">
+          <div className="px-3 py-2 border-t border-low flex items-center gap-3 text-[10px] text-t3">
             <span>↵ Open</span>
             <span>Esc Close</span>
             <span>↑↓ Navigate</span>

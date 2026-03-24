@@ -8,12 +8,9 @@ interface EditBeforeInsertViewProps {
   onBack: () => void
 }
 
-/** Select a range in the textarea and scroll so it's visible in the viewport. */
 function selectAndScroll(ta: HTMLTextAreaElement, start: number, end: number) {
   ta.focus()
   ta.setSelectionRange(start, end)
-
-  // Estimate the line containing `start` and scroll to it
   const textBefore = ta.value.substring(0, start)
   const totalLines = ta.value.split('\n').length
   const linesBefore = textBefore.split('\n').length - 1
@@ -26,7 +23,6 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
   const [content, setContent] = useState(template.content)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-focus and select the first placeholder on mount
   useEffect(() => {
     const ta = textareaRef.current
     if (!ta) return
@@ -46,7 +42,6 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
     if (next) {
       selectAndScroll(ta, next.start, next.end)
     } else {
-      // Wrap to first
       const first = findNextPlaceholder(ta.value, -1)
       if (first) selectAndScroll(ta, first.start, first.end)
     }
@@ -60,7 +55,6 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
     if (prev) {
       selectAndScroll(ta, prev.start, prev.end)
     } else {
-      // Wrap to last
       const all = findAllPlaceholders(ta.value)
       if (all.length > 0) {
         const last = all[all.length - 1]!
@@ -73,11 +67,7 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Tab') {
         e.preventDefault()
-        if (e.shiftKey) {
-          selectPrev()
-        } else {
-          selectNext()
-        }
+        if (e.shiftKey) { selectPrev() } else { selectNext() }
         return
       }
       if (e.key === 'Enter' && e.ctrlKey) {
@@ -96,38 +86,35 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-low shrink-0">
         <button
           onClick={onBack}
-          className="text-zinc-500 hover:text-zinc-300 text-xs px-2 py-1 rounded hover:bg-zinc-800"
+          className="text-t3 hover:text-t1 text-xs px-2 py-1 rounded hover:bg-raised"
         >
           ← Back
         </button>
-        <span className="flex-1 text-xs font-medium text-zinc-300 truncate text-center">
+        <span className="flex-1 text-xs font-medium text-t2 truncate text-center">
           {template.title}
         </span>
         <button
           onClick={() => onConfirm(content)}
-          className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded"
+          className="text-xs px-3 py-1 bg-accent hover:opacity-90 text-white rounded"
         >
           Insert
         </button>
       </div>
 
-      {/* Editable content */}
       <textarea
         ref={textareaRef}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 w-full bg-transparent text-zinc-100 text-sm font-mono px-3 py-2.5 resize-none focus:outline-none"
+        className="flex-1 w-full bg-transparent text-t1 text-sm font-mono px-3 py-2.5 resize-none focus:outline-none"
         spellCheck={false}
         autoComplete="off"
       />
 
-      {/* Hint bar */}
-      <div className="px-3 py-1.5 border-t border-zinc-800 flex items-center gap-3 text-[10px] text-zinc-500 shrink-0">
+      <div className="px-3 py-1.5 border-t border-low flex items-center gap-3 text-[10px] text-t3 shrink-0">
         <span>Tab next field</span>
         <span>⇧Tab prev</span>
         <span>Ctrl+↵ Insert</span>

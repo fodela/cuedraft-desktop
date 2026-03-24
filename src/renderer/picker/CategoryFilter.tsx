@@ -11,8 +11,8 @@ export function CategoryFilter({ categories, activeCategory, onSelect }: Categor
         onClick={() => onSelect(null)}
         className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
           activeCategory === null
-            ? 'bg-blue-500 text-white'
-            : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            ? 'bg-accent text-white'
+            : 'bg-raised text-t2 hover:text-t1'
         }`}
       >
         All
@@ -23,8 +23,8 @@ export function CategoryFilter({ categories, activeCategory, onSelect }: Categor
           onClick={() => onSelect(cat)}
           className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
             activeCategory === cat
-              ? 'bg-blue-500 text-white'
-              : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+              ? 'bg-accent text-white'
+              : 'bg-raised text-t2 hover:text-t1'
           }`}
         >
           {cat}

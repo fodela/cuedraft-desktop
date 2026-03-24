@@ -14,7 +14,8 @@ export interface Settings {
   showInTray: boolean
   privacyMode: boolean
   vimMode: boolean
-  theme: 'system' | 'light' | 'dark' | 'obsidian-dark' | 'midnight-blue'
+  theme: 'light' | 'dark' | 'auto'
+  accentColor: 'black' | 'purple' | 'blue' | 'pink' | 'violet' | 'indigo' | 'orange' | 'teal' | 'bronze' | 'mint'
   windowOpacity: number
   borderRadius: 'sharp' | 'subtle' | 'round'
   font: 'inter' | 'geist' | 'jetbrains-mono' | 'system-ui'
