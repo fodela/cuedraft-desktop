@@ -6,7 +6,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     <button
       onClick={() => onChange(!checked)}
       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-        checked ? 'bg-accent' : 'bg-zinc-600'
+        checked ? 'bg-accent' : 'bg-t4'
       }`}
     >
       <span

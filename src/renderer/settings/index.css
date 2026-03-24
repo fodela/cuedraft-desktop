@@ -61,6 +61,13 @@ body  { font-family: var(--c-font); }
 :root[data-radius="round"] .rounded-xl { border-radius: 20px; }
 :root[data-radius="round"] .rounded-2xl { border-radius: 24px; }
 
+/* ── Scrollbars ─────────────────────────────────── */
+::-webkit-scrollbar              { width: 4px; height: 4px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: var(--c-bdr-hi); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--c-t4); }
+::-webkit-scrollbar-corner       { background: transparent; }
+
 /* ── Semantic utilities ─────────────────────────── */
 @layer utilities {
   .bg-base       { background-color: var(--c-bg); }
@@ -73,6 +80,8 @@ body  { font-family: var(--c-font); }
   .border-low    { border-color: var(--c-bdr); }
   .border-mid    { border-color: var(--c-bdr-hi); }
   .text-accent   { color: var(--c-accent); }
+  .bg-t3         { background-color: var(--c-t3); }
+  .bg-t4         { background-color: var(--c-t4); }
   .bg-accent     { background-color: var(--c-accent); }
   .bg-accent-dim { background-color: var(--c-adim); }
   .border-accent { border-color: var(--c-accent); }

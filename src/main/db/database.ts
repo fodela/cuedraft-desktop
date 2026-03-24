@@ -225,7 +225,7 @@ __SENDER_CONTACT__`,
   },
 ]
 
-function seedIfEmpty(database: Database.Database): void {
+export function seedIfEmpty(database: Database.Database): void {
   const count = database.prepare('SELECT COUNT(*) as count FROM templates').get() as { count: number }
   if (count.count > 0) return
 

@@ -5,13 +5,15 @@ import { EditTemplateScreen } from "./EditTemplateScreen";
 import { SettingsScreen } from "./SettingsScreen";
 import { AppearanceScreen } from "./AppearanceScreen";
 import { KeybindingsScreen } from "./KeybindingsScreen";
+import { AboutScreen } from "./AboutScreen";
 
 type Screen =
   | { name: "home" }
   | { name: "edit"; templateId: number | null }
   | { name: "settings" }
   | { name: "keybindings" }
-  | { name: "appearance" };
+  | { name: "appearance" }
+  | { name: "about" };
 
 type NavItem = { id: Screen["name"]; label: string; icon: React.ReactNode };
 
@@ -112,6 +114,7 @@ const SCREEN_LABELS: Record<string, string> = {
   edit: "Edit Template",
   keybindings: "Keybindings",
   appearance: "Appearance",
+  about: "About",
 };
 
 export function SettingsApp() {
@@ -156,7 +159,7 @@ export function SettingsApp() {
                 CUEDRAFT
               </div>
               <div className="text-[10px] tracking-widest text-t3 mt-0.5 uppercase">
-                Alpha v0.1.0
+                Alpha v0.1.
               </div>
             </div>
           </div>
@@ -239,7 +242,7 @@ export function SettingsApp() {
           </div>
 
           {/* Icons */}
-          <button className="w-7 h-7 flex items-center justify-center rounded-full text-t3 hover:text-t1 hover:bg-raised transition-colors">
+          <button onClick={() => setScreen({ name: "about" })} className="w-7 h-7 flex items-center justify-center rounded-full text-t3 hover:text-t1 hover:bg-raised transition-colors">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -292,6 +295,7 @@ export function SettingsApp() {
           {screen.name === "settings" && <SettingsScreen />}
           {screen.name === "keybindings" && <KeybindingsScreen />}
           {screen.name === "appearance" && <AppearanceScreen />}
+          {screen.name === "about" && <AboutScreen />}
         </main>
       </div>
     </div>

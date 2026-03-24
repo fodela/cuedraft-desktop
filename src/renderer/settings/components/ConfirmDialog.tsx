@@ -8,13 +8,13 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({ title, message, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-5 w-[360px]">
-        <h3 className="text-sm font-medium text-zinc-100 mb-2">{title}</h3>
-        <p className="text-xs text-zinc-400 mb-4">{message}</p>
+      <div className="bg-surface rounded-lg border border-low p-5 w-[360px]">
+        <h3 className="text-sm font-medium text-t1 mb-2">{title}</h3>
+        <p className="text-xs text-t2 mb-4">{message}</p>
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 rounded border border-zinc-700"
+            className="px-3 py-1.5 text-xs text-t2 hover:text-t1 rounded border border-low"
           >
             Cancel
           </button>

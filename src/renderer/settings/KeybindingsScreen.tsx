@@ -233,7 +233,7 @@ export function KeybindingsScreen() {
               <span className="text-[10px] font-bold tracking-widest uppercase text-t2">
                 Conflict Monitor
               </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow shadow-emerald-500/50" />
+              <span className="w-2 h-2 rounded-full bg-accent" />
             </div>
             <p className="text-xs text-t3 leading-relaxed">
               No keybinding conflicts detected in current profile. All 48 system triggers are active and mapped.

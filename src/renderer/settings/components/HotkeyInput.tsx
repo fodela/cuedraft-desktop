@@ -54,8 +54,8 @@ export function HotkeyInput({ value, onChange }: HotkeyInputProps) {
       onBlur={() => setRecording(false)}
       className={`px-3 py-2 text-sm rounded border transition-colors ${
         recording
-          ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-          : 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-zinc-500'
+          ? 'border-accent bg-accent-dim text-accent'
+          : 'border-mid bg-base text-t1 hover:border-accent'
       }`}
     >
       {recording ? 'Press a key combination…' : value}
