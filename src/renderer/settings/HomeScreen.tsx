@@ -9,14 +9,13 @@ interface HomeScreenProps {
   onCreate: () => void;
 }
 
-type Tab = "all" | "drafts" | "archived";
-
 export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [hotkey, setHotkey] = useState("Ctrl+Shift+Space");
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("all");
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeletePending, setBulkDeletePending] = useState(false);
 
   const fetchTemplates = useCallback(async () => {
     const all = await window.cuedraft.templates.getAll();
@@ -35,6 +34,27 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
     fetchTemplates();
   };
 
+  const toggleRow = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(filtered.map((t) => t.id)));
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selectedIds) {
+      await window.cuedraft.templates.delete(id);
+    }
+    setSelectedIds(new Set());
+    setBulkDeletePending(false);
+    fetchTemplates();
+  };
+
   const filtered = templates.filter((t) =>
     search
       ? t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -42,29 +62,14 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
       : true,
   );
 
+  const allSelected = filtered.length > 0 && filtered.every((t) => selectedIds.has(t.id));
+  const someSelected = selectedIds.size > 0;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-6 px-8 pt-6 pb-0 shrink-0">
-        <div className="flex items-center gap-6">
-          <h1 className="text-base font-semibold text-t1">My Templates</h1>
-          <div className="flex items-center gap-1">
-            {(["all", "drafts", "archived"] as Tab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-sm capitalize transition-colors relative ${
-                  activeTab === tab ? "text-accent" : "text-t3 hover:text-t2"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {activeTab === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h1 className="text-base font-semibold text-t1">My Templates</h1>
 
         <div className="ml-auto flex items-center gap-3">
           <div className="relative">
@@ -130,8 +135,30 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
 
       {/* Table */}
       <div className="flex-1 overflow-y-auto px-8 py-4 min-h-0">
+        {someSelected && (
+          <div className="flex items-center justify-between px-3 py-2 mb-3 bg-raised border border-mid rounded-lg">
+            <span className="text-xs text-t2">{selectedIds.size} selected</span>
+            <button
+              onClick={() => setBulkDeletePending(true)}
+              className="px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-500 rounded transition-colors"
+            >
+              Delete Selected
+            </button>
+          </div>
+        )}
         <div className="rounded-xl border border-low overflow-hidden">
-          <div className="grid grid-cols-[1fr_160px_140px_100px_120px] bg-surface px-4 py-3 border-b border-low">
+          <div className="grid grid-cols-[32px_1fr_160px_140px_100px_120px] bg-surface px-4 py-3 border-b border-low">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected && !allSelected;
+                }}
+                className="w-3.5 h-3.5 accent-accent cursor-pointer"
+              />
+            </div>
             {["Title", "Category", "Last Used", "Usage", "Actions"].map(
               (col) => (
                 <div
@@ -152,10 +179,18 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
             filtered.map((t, i) => (
               <div
                 key={t.id}
-                className={`grid grid-cols-[1fr_160px_140px_100px_120px] px-4 py-3.5 items-center group hover:bg-raised transition-colors bg-surface ${
-                  i < filtered.length - 1 ? "border-b border-low" : ""
-                }`}
+                className={`grid grid-cols-[32px_1fr_160px_140px_100px_120px] px-4 py-3.5 items-center group hover:bg-raised transition-colors ${
+                  selectedIds.has(t.id) ? "bg-raised" : "bg-surface"
+                } ${i < filtered.length - 1 ? "border-b border-low" : ""}`}
               >
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(t.id)}
+                    onChange={() => toggleRow(t.id)}
+                    className="w-3.5 h-3.5 accent-accent cursor-pointer"
+                  />
+                </div>
                 <div className="min-w-0 pr-4">
                   <div className="text-sm font-medium text-t1 truncate">
                     {t.title}
@@ -287,6 +322,15 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
           message={`Are you sure you want to delete "${deleteTarget.title}"? This cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {bulkDeletePending && (
+        <ConfirmDialog
+          title="Delete Templates"
+          message={`Are you sure you want to delete ${selectedIds.size} template${selectedIds.size === 1 ? "" : "s"}? This cannot be undone.`}
+          onConfirm={handleBulkDelete}
+          onCancel={() => setBulkDeletePending(false)}
         />
       )}
     </div>

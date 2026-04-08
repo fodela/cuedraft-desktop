@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { applyAllSettings } from '../theme'
 import { SearchBar } from './SearchBar'
 import { CategoryFilter } from './CategoryFilter'
@@ -23,6 +23,13 @@ export function PickerApp() {
     useKeyboardNavigation(templates.length)
 
   const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null)
+  const pendingTemplateRef = useRef<Template | null>(null)
+
+  // Keep ref in sync so the onShow callback always sees the latest value
+  // without needing to be re-registered on every state change.
+  useEffect(() => {
+    pendingTemplateRef.current = pendingTemplate
+  }, [pendingTemplate])
 
   useEffect(() => {
     resetSelection()
@@ -33,8 +40,12 @@ export function PickerApp() {
       // Re-apply settings each time the picker is shown so changes made in
       // the Settings window (different renderer process) are picked up.
       window.cuedraft.settings.get().then((s) => applyAllSettings(s))
-      setPendingTemplate(null)
-      reset()
+
+      // If the user was mid-edit, restore them to exactly where they were.
+      // Only reset to the template list when there's nothing in progress.
+      if (!pendingTemplateRef.current) {
+        reset()
+      }
     })
   }, [reset])
 
