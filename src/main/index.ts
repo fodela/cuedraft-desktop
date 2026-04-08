@@ -5,6 +5,7 @@ import { registerHotkey, unregisterHotkey } from './hotkey'
 import { getDatabase, closeDatabase } from './db/database'
 import { registerTemplateHandlers } from './ipc/templates'
 import { registerSettingsHandlers } from './ipc/settings'
+import { registerNoteHandlers } from './ipc/notes'
 import { getSettings } from './db/settings-store'
 
 app.whenReady().then(() => {
@@ -14,6 +15,7 @@ app.whenReady().then(() => {
   // Register IPC handlers
   registerTemplateHandlers()
   registerSettingsHandlers()
+  registerNoteHandlers()
 
   // Create tray and picker window
   createTray()

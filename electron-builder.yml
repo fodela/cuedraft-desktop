@@ -11,6 +11,8 @@ extraResources:
 asarUnpack:
   - "**/node_modules/better-sqlite3/**"
   - "**/node_modules/@jitsi/robotjs/**"
+
+# ── Windows ──────────────────────────────────────────────
 win:
   target: nsis
   icon: assets/tray-icon.ico
@@ -18,6 +20,8 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   perMachine: false
+
+# ── Linux ────────────────────────────────────────────────
 linux:
   target:
     - deb
@@ -30,3 +34,27 @@ linux:
 deb:
   depends:
     - libxtst6
+
+# ── macOS ────────────────────────────────────────────────
+mac:
+  target:
+    - dmg       # drag-to-Applications disk image (most common)
+    - zip       # plain zip for auto-updater / manual install
+  icon: assets/tray-icon.icns
+  # Required so robotjs can inject keystrokes via the Accessibility API
+  extendInfo:
+    NSAccessibilityUsageDescription: >
+      CueDraft needs Accessibility access to type text into other apps.
+  # Uncomment and fill in once you have an Apple Developer account:
+  # identity: "Developer ID Application: Your Name (TEAMID)"
+  # notarize: true
+dmg:
+  title: "${productName} ${version}"
+  background: assets/dmg-background.png   # optional, 540×380 px PNG
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

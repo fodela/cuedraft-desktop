@@ -7,6 +7,14 @@ export interface Template {
   last_used: number | null
 }
 
+export interface Note {
+  id: number
+  title: string
+  content: string
+  category: string | null
+  created_at: number
+}
+
 export interface Settings {
   hotkey: string
   injectionMethod: 'auto' | 'clipboard'
@@ -31,6 +39,11 @@ export const IPC = {
   TEMPLATES_UPDATE: 'templates:update',
   TEMPLATES_DELETE: 'templates:delete',
   TEMPLATES_INJECT: 'templates:inject',
+  NOTES_GET_ALL: 'notes:getAll',
+  NOTES_GET_BY_ID: 'notes:getById',
+  NOTES_CREATE: 'notes:create',
+  NOTES_UPDATE: 'notes:update',
+  NOTES_DELETE: 'notes:delete',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_RESET: 'settings:reset',

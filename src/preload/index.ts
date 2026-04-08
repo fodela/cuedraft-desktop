@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { Template, Settings } from '../shared/types'
+import type { Template, Note, Settings } from '../shared/types'
 import { IPC } from '../shared/types'
 
 const api = {
@@ -22,6 +22,18 @@ const api = {
       ipcRenderer.invoke(IPC.TEMPLATES_DELETE, { id }),
     inject: (content: string, id?: number): Promise<void> =>
       ipcRenderer.invoke(IPC.TEMPLATES_INJECT, { content, id }),
+  },
+  notes: {
+    getAll: (): Promise<Note[]> =>
+      ipcRenderer.invoke(IPC.NOTES_GET_ALL),
+    getById: (id: number): Promise<Note | undefined> =>
+      ipcRenderer.invoke(IPC.NOTES_GET_BY_ID, { id }),
+    create: (data: Omit<Note, 'id'>): Promise<Note> =>
+      ipcRenderer.invoke(IPC.NOTES_CREATE, data),
+    update: (data: Note): Promise<Note> =>
+      ipcRenderer.invoke(IPC.NOTES_UPDATE, data),
+    delete: (id: number): Promise<void> =>
+      ipcRenderer.invoke(IPC.NOTES_DELETE, { id }),
   },
   settings: {
     get: (): Promise<Settings> =>

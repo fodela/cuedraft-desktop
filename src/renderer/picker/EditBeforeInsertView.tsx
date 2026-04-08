@@ -23,6 +23,16 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
   const [content, setContent] = useState(template.content)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Copy to clipboard
+  const [copied, setCopied] = useState(false)
+
+  // Save as note modal
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [noteName, setNoteName] = useState(template.title)
+  const [noteCategory, setNoteCategory] = useState(template.category ?? '')
+  const [noteSaved, setNoteSaved] = useState(false)
+  const noteNameRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     const ta = textareaRef.current
     if (!ta) return
@@ -33,6 +43,13 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
       ta.focus()
     }
   }, [template.content])
+
+  // Focus note name input when modal opens
+  useEffect(() => {
+    if (showSaveModal) {
+      setTimeout(() => noteNameRef.current?.focus(), 50)
+    }
+  }, [showSaveModal])
 
   const selectNext = useCallback(() => {
     const ta = textareaRef.current
@@ -84,12 +101,52 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
     [selectNext, selectPrev, onConfirm, onBack, content]
   )
 
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }, [content])
+
+  const openSaveModal = useCallback(() => {
+    setNoteName(template.title)
+    setNoteCategory(template.category ?? '')
+    setShowSaveModal(true)
+  }, [template.title, template.category])
+
+  const handleSaveNote = useCallback(async () => {
+    if (!noteName.trim()) return
+    await window.cuedraft.notes.create({
+      title: noteName.trim(),
+      content,
+      category: noteCategory.trim() || null,
+      created_at: Date.now(),
+    })
+    setShowSaveModal(false)
+    setNoteSaved(true)
+    setTimeout(() => setNoteSaved(false), 2000)
+  }, [noteName, noteCategory, content])
+
+  const handleModalKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setShowSaveModal(false)
+      }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        handleSaveNote()
+      }
+    },
+    [handleSaveNote]
+  )
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-low shrink-0">
         <button
           onClick={onBack}
-          className="text-t3 hover:text-t1 text-xs px-2 py-1 rounded hover:bg-raised"
+          className="text-t3 hover:text-t1 text-xs px-2 py-1 rounded hover:bg-raised shrink-0"
         >
           ← Back
         </button>
@@ -97,13 +154,32 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
           {template.title}
         </span>
         <button
+          onClick={handleCopy}
+          className="text-xs px-2 py-1 text-t2 hover:text-t1 rounded hover:bg-raised shrink-0 transition-colors"
+          title="Copy to clipboard"
+        >
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+        <button
+          onClick={openSaveModal}
+          className={`text-xs px-2 py-1 rounded shrink-0 transition-colors ${
+            noteSaved
+              ? 'text-accent'
+              : 'text-t2 hover:text-t1 hover:bg-raised'
+          }`}
+          title="Save as note"
+        >
+          {noteSaved ? '✓ Saved' : 'Save Note'}
+        </button>
+        <button
           onClick={() => onConfirm(content)}
-          className="text-xs px-3 py-1 bg-accent hover:opacity-90 text-white rounded"
+          className="text-xs px-3 py-1 bg-accent hover:opacity-90 text-white rounded shrink-0"
         >
           Insert
         </button>
       </div>
 
+      {/* Textarea */}
       <textarea
         ref={textareaRef}
         value={content}
@@ -114,12 +190,73 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
         autoComplete="off"
       />
 
+      {/* Hints */}
       <div className="px-3 py-1.5 border-t border-low flex items-center gap-3 text-[10px] text-t3 shrink-0">
         <span>Tab next field</span>
         <span>⇧Tab prev</span>
         <span>Ctrl+↵ Insert</span>
         <span>Esc Back</span>
       </div>
+
+      {/* Save as Note modal */}
+      {showSaveModal && (
+        <div
+          className="absolute inset-0 bg-black/60 flex items-center justify-center z-50"
+          onKeyDown={handleModalKeyDown}
+        >
+          <div className="bg-surface rounded-xl border border-low p-5 w-[280px] mx-4 shadow-xl">
+            <h3 className="text-sm font-semibold text-t1 mb-4">Save as Note</h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] tracking-wider uppercase text-t3 mb-1.5">
+                  Note name <span className="text-accent normal-case tracking-normal">*</span>
+                </label>
+                <input
+                  ref={noteNameRef}
+                  type="text"
+                  value={noteName}
+                  onChange={(e) => setNoteName(e.target.value)}
+                  placeholder="Enter a name..."
+                  className="w-full bg-raised border border-mid text-t1 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-accent placeholder:text-t4"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] tracking-wider uppercase text-t3 mb-1.5">
+                  Category{' '}
+                  <span className="text-t4 normal-case tracking-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={noteCategory}
+                  onChange={(e) => setNoteCategory(e.target.value)}
+                  placeholder="e.g. Medical, Surgical..."
+                  className="w-full bg-raised border border-mid text-t1 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-accent placeholder:text-t4"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowSaveModal(false)}
+                className="px-3 py-1.5 text-xs text-t2 hover:text-t1 rounded border border-low transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNote}
+                disabled={!noteName.trim()}
+                className="px-3 py-1.5 text-xs text-white bg-accent hover:opacity-90 rounded disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              >
+                Save Note
+              </button>
+            </div>
+
+            <p className="mt-3 text-[10px] text-t4 text-center">Ctrl+↵ to save quickly</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

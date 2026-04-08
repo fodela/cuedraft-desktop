@@ -5,6 +5,14 @@ import { join } from 'path'
 let db: Database.Database | null = null
 
 export const SCHEMA = `
+CREATE TABLE IF NOT EXISTS notes (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  title      TEXT    NOT NULL,
+  content    TEXT    NOT NULL,
+  category   TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+);
+
 CREATE TABLE IF NOT EXISTS templates (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   title     TEXT    NOT NULL,
