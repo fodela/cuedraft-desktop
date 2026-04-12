@@ -26,13 +26,14 @@ describe('SettingsApp', () => {
     await waitFor(() => expect(screen.getByText('CUEDRAFT')).toBeInTheDocument())
   })
 
-  it('renders all four nav items', async () => {
+  it('renders the current navigation items', async () => {
     render(<SettingsApp />)
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /General/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Templates/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Notes/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Keybindings/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Appearance/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Settings/i })).toBeInTheDocument()
     })
   })
 
@@ -59,26 +60,25 @@ describe('SettingsApp', () => {
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
-  it('clicking General renders the SettingsScreen', async () => {
+  it('clicking Settings renders the SettingsScreen', async () => {
     render(<SettingsApp />)
-    await waitFor(() => screen.getByRole('button', { name: /General/i }))
+    await waitFor(() => screen.getByRole('button', { name: /^Settings$/i }))
     await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: /General/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^Settings$/i }))
     })
     await waitFor(() =>
       expect(screen.getByText(/Startup & System Behavior/i)).toBeInTheDocument()
     )
   })
 
-  it('breadcrumb updates to "General" when navigating there', async () => {
+  it('breadcrumb updates to "Settings" when navigating there', async () => {
     render(<SettingsApp />)
-    await waitFor(() => screen.getByRole('button', { name: /General/i }))
+    await waitFor(() => screen.getByRole('button', { name: /^Settings$/i }))
     await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: /General/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^Settings$/i }))
     })
     await waitFor(() => {
-      // header breadcrumb span contains "General"
-      expect(screen.getAllByText('General').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Settings').length).toBeGreaterThan(0)
     })
   })
 
@@ -107,9 +107,9 @@ describe('SettingsApp', () => {
   it('clicking Templates from another screen returns to HomeScreen', async () => {
     render(<SettingsApp />)
     // Navigate away first
-    await waitFor(() => screen.getByRole('button', { name: /General/i }))
+    await waitFor(() => screen.getByRole('button', { name: /^Settings$/i }))
     await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: /General/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^Settings$/i }))
     })
     await waitFor(() => screen.getByText(/Startup & System Behavior/i))
     // Navigate back to Templates

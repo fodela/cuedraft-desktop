@@ -8,7 +8,8 @@ const DEFAULTS = {
   showInTray: true,
   privacyMode: true,
   vimMode: false,
-  theme: 'obsidian-dark',
+  theme: 'dark',
+  accentColor: 'teal',
   windowOpacity: 92,
   borderRadius: 'subtle',
   font: 'inter',
@@ -21,6 +22,7 @@ vi.mock('../../../main/db/settings-store', () => ({
 }))
 vi.mock('../../../main/hotkey', () => ({ registerHotkey: vi.fn(() => true) }))
 vi.mock('../../../main/windows', () => ({ togglePicker: vi.fn() }))
+vi.mock('../../../main/tray', () => ({ syncTrayVisibility: vi.fn() }))
 
 describe('registerSettingsHandlers', () => {
   const handlers = new Map<string, Function>()
@@ -83,10 +85,20 @@ describe('registerSettingsHandlers', () => {
     expect(app.setLoginItemSettings).not.toHaveBeenCalled()
   })
 
+  it('SETTINGS_SET with showInTray calls syncTrayVisibility', async () => {
+    const { syncTrayVisibility } = await import('../../../main/tray')
+    await handlers.get(IPC.SETTINGS_SET)!(null, { showInTray: false })
+    expect(syncTrayVisibility).toHaveBeenCalledWith(false)
+  })
+
   it('SETTINGS_RESET calls resetSettings() and returns defaults', async () => {
     const store = await import('../../../main/db/settings-store')
+    const { registerHotkey } = await import('../../../main/hotkey')
+    const { app } = await import('electron')
     const result = await handlers.get(IPC.SETTINGS_RESET)!(null)
     expect(store.resetSettings).toHaveBeenCalled()
+    expect(registerHotkey).not.toHaveBeenCalled()
+    expect(app.setLoginItemSettings).not.toHaveBeenCalled()
     expect(result).toMatchObject(DEFAULTS)
   })
 })

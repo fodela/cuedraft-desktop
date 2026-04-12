@@ -6,29 +6,41 @@ import { HomeScreen } from '../../../renderer/settings/HomeScreen'
 import type { Template } from '../../../shared/types'
 
 const TEMPLATES: Template[] = [
-  { id: 1, title: 'Medical History', content: 'PC: __COMPLAINT__', category: 'Medical', use_count: 5,  last_used: null },
-  { id: 2, title: 'Legal Notice',    content: 'Dear Sir/Madam',    category: 'Legal',   use_count: 2,  last_used: null },
+  { id: 1, title: 'Medical History', content: 'PC: __COMPLAINT__', category: 'Medical', use_count: 5, last_used: null },
+  { id: 2, title: 'Legal Notice', content: 'Dear Sir/Madam', category: 'Legal', use_count: 2, last_used: null },
 ]
+
+function filterTemplates(search = '') {
+  const normalized = search.toLowerCase()
+  return TEMPLATES.filter((template) =>
+    normalized.length === 0
+      ? true
+      : template.title.toLowerCase().includes(normalized) ||
+        (template.category ?? '').toLowerCase().includes(normalized)
+  )
+}
 
 describe('HomeScreen', () => {
   beforeEach(() => {
-    ;(window.cuedraft.templates.getAll as ReturnType<typeof vi.fn>).mockResolvedValue(TEMPLATES)
+    ;(window.cuedraft.templates.list as ReturnType<typeof vi.fn>).mockImplementation(
+      async (query?: { search?: string }) => {
+        const items = filterTemplates(query?.search ?? '')
+        return { items, total: items.length }
+      }
+    )
     ;(window.cuedraft.templates.delete as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
   })
-
-  // ── Rendering ─────────────────────────────────────────────────────────────
 
   it('renders "My Templates" heading', async () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() => expect(screen.getByText('My Templates')).toBeInTheDocument())
   })
 
-  it('renders All / Drafts / Archived tabs', async () => {
+  it('renders the search and action controls in the header', async () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() => {
-      expect(screen.getByText('All')).toBeInTheDocument()
-      expect(screen.getByText('Drafts')).toBeInTheDocument()
-      expect(screen.getByText('Archived')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/Search cues/i)).toBeInTheDocument()
+      expect(screen.getByText('My Templates')).toBeInTheDocument()
     })
   })
 
@@ -53,14 +65,16 @@ describe('HomeScreen', () => {
   it('shows category badges', async () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() => {
-      // Tailwind `uppercase` is CSS-only; DOM text content stays as written
       expect(screen.getByText('Medical')).toBeInTheDocument()
       expect(screen.getByText('Legal')).toBeInTheDocument()
     })
   })
 
   it('shows "No templates found." when list is empty', async () => {
-    ;(window.cuedraft.templates.getAll as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    ;(window.cuedraft.templates.list as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [],
+      total: 0,
+    })
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() =>
       expect(screen.getByText('No templates found.')).toBeInTheDocument()
@@ -75,16 +89,16 @@ describe('HomeScreen', () => {
     })
   })
 
-  // ── Search ────────────────────────────────────────────────────────────────
-
   it('filters templates by title as user types', async () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() => screen.getByText('Medical History'))
     await act(async () => {
       await userEvent.type(screen.getByPlaceholderText(/Search cues/i), 'Medical')
     })
-    expect(screen.getByText('Medical History')).toBeInTheDocument()
-    expect(screen.queryByText('Legal Notice')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Medical History')).toBeInTheDocument()
+      expect(screen.queryByText('Legal Notice')).not.toBeInTheDocument()
+    })
   })
 
   it('filters templates by category name', async () => {
@@ -93,8 +107,10 @@ describe('HomeScreen', () => {
     await act(async () => {
       await userEvent.type(screen.getByPlaceholderText(/Search cues/i), 'Legal')
     })
-    expect(screen.getByText('Legal Notice')).toBeInTheDocument()
-    expect(screen.queryByText('Medical History')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Legal Notice')).toBeInTheDocument()
+      expect(screen.queryByText('Medical History')).not.toBeInTheDocument()
+    })
   })
 
   it('shows "No templates found." when search matches nothing', async () => {
@@ -103,7 +119,9 @@ describe('HomeScreen', () => {
     await act(async () => {
       await userEvent.type(screen.getByPlaceholderText(/Search cues/i), 'xyzzy')
     })
-    expect(screen.getByText('No templates found.')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByText('No templates found.')).toBeInTheDocument()
+    )
   })
 
   it('restores all templates when search is cleared', async () => {
@@ -118,17 +136,12 @@ describe('HomeScreen', () => {
     })
   })
 
-  // ── Tab switching ──────────────────────────────────────────────────────────
-
-  it('clicking a tab changes the active tab', async () => {
+  it('renders the header actions and the FAB', async () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
-    await waitFor(() => screen.getByText('Drafts'))
-    await act(async () => { await userEvent.click(screen.getByText('Drafts')) })
-    // Active tab has text-accent class; just verify clicking doesn't throw
-    expect(screen.getByText('Drafts')).toBeInTheDocument()
+    await waitFor(() => screen.getByText('My Templates'))
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBeGreaterThanOrEqual(3)
   })
-
-  // ── Actions ───────────────────────────────────────────────────────────────
 
   it('clicking Edit calls onEdit with the template id', async () => {
     const onEdit = vi.fn()
@@ -153,19 +166,16 @@ describe('HomeScreen', () => {
     render(<HomeScreen onEdit={vi.fn()} onCreate={vi.fn()} />)
     await waitFor(() => screen.getByText('Medical History'))
 
-    // Open dialog
     const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i })
     await act(async () => { await userEvent.click(deleteBtns[0]!) })
     await waitFor(() => screen.getByText(/Are you sure/i))
 
-    // The dialog contains a Delete button with bg-red-600 class
     const overlay = document.querySelector('.fixed.inset-0') as HTMLElement
     const confirmBtn = within(overlay).getByRole('button', { name: /^Delete$/i })
     await act(async () => { await userEvent.click(confirmBtn) })
 
     expect(window.cuedraft.templates.delete).toHaveBeenCalledWith(1)
-    // getAll called once on mount + once after delete
-    expect(window.cuedraft.templates.getAll).toHaveBeenCalledTimes(2)
+    expect(window.cuedraft.templates.list).toHaveBeenCalledTimes(2)
   })
 
   it('cancelling delete dismisses the ConfirmDialog', async () => {
@@ -185,8 +195,8 @@ describe('HomeScreen', () => {
     const onCreate = vi.fn()
     render(<HomeScreen onEdit={vi.fn()} onCreate={onCreate} />)
     await waitFor(() => screen.getByText('My Templates'))
-    const fab = screen.getAllByRole('button').find((b) =>
-      b.classList.contains('fixed') && b.classList.contains('bottom-6')
+    const fab = screen.getAllByRole('button').find((button) =>
+      button.classList.contains('fixed') && button.classList.contains('bottom-6')
     )!
     await act(async () => { await userEvent.click(fab) })
     expect(onCreate).toHaveBeenCalled()

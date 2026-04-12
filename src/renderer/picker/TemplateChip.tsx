@@ -1,15 +1,18 @@
 import type { Template } from '../../shared/types'
+import { obfuscatePreview } from '../../shared/privacy'
 
 interface TemplateChipProps {
   template: Template
+  privacyMode: boolean
   isSelected: boolean
   onClick: () => void
 }
 
-export function TemplateChip({ template, isSelected, onClick }: TemplateChipProps) {
-  const preview = template.content.length > 60
+export function TemplateChip({ template, privacyMode, isSelected, onClick }: TemplateChipProps) {
+  const rawPreview = template.content.length > 60
     ? template.content.slice(0, 60) + '…'
     : template.content
+  const preview = privacyMode ? obfuscatePreview(rawPreview) : rawPreview
 
   return (
     <button

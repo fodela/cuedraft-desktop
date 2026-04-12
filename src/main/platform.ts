@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 
 export type Platform = 'win32' | 'linux-x11' | 'linux-wayland'
 
@@ -17,7 +17,7 @@ export function isWayland(): boolean {
 
 export function hasCommand(cmd: string): boolean {
   try {
-    execSync(`which ${cmd}`, { stdio: 'ignore' })
+    execFileSync('which', [cmd], { stdio: 'ignore' })
     return true
   } catch {
     return false

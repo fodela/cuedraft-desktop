@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Note } from '../../shared/types'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { formatLastUsed } from '../../shared/formatting'
+import { obfuscatePreview } from '../../shared/privacy'
+
+const PAGE_SIZE = 50
 
 interface NotesScreenProps {
   onEdit: (id: number) => void
@@ -9,25 +12,46 @@ interface NotesScreenProps {
 
 export function NotesScreen({ onEdit }: NotesScreenProps) {
   const [notes, setNotes] = useState<Note[]>([])
+  const [total, setTotal] = useState(0)
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkDeletePending, setBulkDeletePending] = useState(false)
+  const [privacyMode, setPrivacyMode] = useState(true)
 
   const fetchNotes = useCallback(async () => {
-    const all = await window.cuedraft.notes.getAll()
-    setNotes(all)
+    const result = await window.cuedraft.notes.list({
+      search,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    })
+    setNotes(result.items)
+    setTotal(result.total)
+  }, [page, search])
+
+  useEffect(() => {
+    window.cuedraft.settings.get().then((settings) => {
+      setPrivacyMode(settings.privacyMode)
+    })
   }, [])
 
   useEffect(() => {
-    fetchNotes()
+    const timeout = window.setTimeout(() => {
+      fetchNotes()
+    }, 120)
+    return () => window.clearTimeout(timeout)
   }, [fetchNotes])
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [notes])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
     await window.cuedraft.notes.delete(deleteTarget.id)
     setDeleteTarget(null)
-    fetchNotes()
+    await fetchNotes()
   }
 
   const toggleRow = (id: number) => {
@@ -39,27 +63,19 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
   }
 
   const toggleAll = () => {
-    setSelectedIds(allSelected ? new Set() : new Set(filtered.map((n) => n.id)))
+    setSelectedIds(allSelected ? new Set() : new Set(notes.map((n) => n.id)))
   }
 
   const handleBulkDelete = async () => {
-    for (const id of selectedIds) {
-      await window.cuedraft.notes.delete(id)
-    }
+    await window.cuedraft.notes.bulkDelete(Array.from(selectedIds))
     setSelectedIds(new Set())
     setBulkDeletePending(false)
-    fetchNotes()
+    await fetchNotes()
   }
 
-  const filtered = notes.filter((n) =>
-    search
-      ? n.title.toLowerCase().includes(search.toLowerCase()) ||
-        (n.category ?? '').toLowerCase().includes(search.toLowerCase())
-      : true,
-  )
-
-  const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id))
+  const allSelected = notes.length > 0 && notes.every((n) => selectedIds.has(n.id))
   const someSelected = selectedIds.size > 0
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -85,7 +101,10 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               placeholder="Search notes..."
               className="bg-raised border border-mid text-t2 text-xs rounded-lg pl-8 pr-4 py-2 w-52 focus:outline-none focus:border-accent placeholder:text-t4"
             />
@@ -132,7 +151,7 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
           </div>
 
           {/* Rows */}
-          {filtered.length === 0 ? (
+          {notes.length === 0 ? (
             <div className="px-4 py-12 text-center bg-surface">
               <p className="text-t4 text-sm mb-1">No notes yet.</p>
               <p className="text-t4 text-xs">
@@ -140,12 +159,12 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
               </p>
             </div>
           ) : (
-            filtered.map((n, i) => (
+            notes.map((n, i) => (
               <div
                 key={n.id}
                 className={`grid grid-cols-[32px_1fr_160px_160px_120px] px-4 py-3.5 items-center group hover:bg-raised transition-colors ${
                   selectedIds.has(n.id) ? 'bg-raised' : 'bg-surface'
-                } ${i < filtered.length - 1 ? 'border-b border-low' : ''}`}
+                } ${i < notes.length - 1 ? 'border-b border-low' : ''}`}
               >
                 <div className="flex items-center">
                   <input
@@ -159,7 +178,9 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
                 <div className="min-w-0 pr-4">
                   <div className="text-sm font-medium text-t1 truncate">{n.title}</div>
                   <div className="text-xs text-t4 truncate mt-0.5">
-                    {n.content.slice(0, 50).replace(/\n/g, ' ')}
+                    {privacyMode
+                      ? obfuscatePreview(n.content.slice(0, 50).replace(/\n/g, ' '))
+                      : n.content.slice(0, 50).replace(/\n/g, ' ')}
                   </div>
                 </div>
 
@@ -201,8 +222,33 @@ export function NotesScreen({ onEdit }: NotesScreenProps) {
           Notes · saved from picker edits
         </span>
         <span className="text-[10px] text-t3">
-          {notes.length} note{notes.length !== 1 ? 's' : ''}
+          {total} note{total !== 1 ? 's' : ''}
         </span>
+      </div>
+
+      <div className="flex items-center justify-between px-8 pb-4 shrink-0 text-xs text-t3">
+        <span>
+          {total.toLocaleString()} note{total !== 1 ? 's' : ''} total
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1}
+            className="px-2 py-1 rounded border border-low disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <span>
+            Page {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages}
+            className="px-2 py-1 rounded border border-low disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {deleteTarget && (

@@ -6,12 +6,13 @@ import { TemplateChip } from './TemplateChip'
 import { EditBeforeInsertView } from './EditBeforeInsertView'
 import { useTemplates } from './hooks/useTemplates'
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
-import type { Template } from '../../shared/types'
+import type { Settings, Template } from '../../shared/types'
 
 export function PickerApp() {
   const {
     templates,
     categories,
+    total,
     activeCategory,
     searchQuery,
     search,
@@ -23,6 +24,7 @@ export function PickerApp() {
     useKeyboardNavigation(templates.length)
 
   const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null)
+  const [privacyMode, setPrivacyMode] = useState<Settings['privacyMode']>(true)
   const pendingTemplateRef = useRef<Template | null>(null)
 
   // Keep ref in sync so the onShow callback always sees the latest value
@@ -36,10 +38,19 @@ export function PickerApp() {
   }, [templates, resetSelection])
 
   useEffect(() => {
-    window.cuedraft.picker.onShow(() => {
+    window.cuedraft.settings.get().then((settings) => {
+      setPrivacyMode(settings.privacyMode)
+    })
+  }, [])
+
+  useEffect(() => {
+    return window.cuedraft.picker.onShow(() => {
       // Re-apply settings each time the picker is shown so changes made in
       // the Settings window (different renderer process) are picked up.
-      window.cuedraft.settings.get().then((s) => applyAllSettings(s))
+      window.cuedraft.settings.get().then((s) => {
+        setPrivacyMode(s.privacyMode)
+        applyAllSettings(s)
+      })
 
       // If the user was mid-edit, restore them to exactly where they were.
       // Only reset to the template list when there's nothing in progress.
@@ -114,6 +125,7 @@ export function PickerApp() {
                   <TemplateChip
                     key={template.id}
                     template={template}
+                    privacyMode={privacyMode}
                     isSelected={index === selectedIndex}
                     onClick={() => {
                       setSelectedIndex(index)
@@ -129,6 +141,7 @@ export function PickerApp() {
             <span>↵ Open</span>
             <span>Esc Close</span>
             <span>↑↓ Navigate</span>
+            {total > templates.length && <span>Showing top {templates.length} of {total}</span>}
           </div>
         </>
       )}

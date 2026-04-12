@@ -31,6 +31,8 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
   const [noteName, setNoteName] = useState(template.title)
   const [noteCategory, setNoteCategory] = useState(template.category ?? '')
   const [noteSaved, setNoteSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const noteNameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -110,20 +112,31 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
   const openSaveModal = useCallback(() => {
     setNoteName(template.title)
     setNoteCategory(template.category ?? '')
+    setSaveError(null)
+    setIsSaving(false)
     setShowSaveModal(true)
   }, [template.title, template.category])
 
   const handleSaveNote = useCallback(async () => {
     if (!noteName.trim()) return
-    await window.cuedraft.notes.create({
-      title: noteName.trim(),
-      content,
-      category: noteCategory.trim() || null,
-      created_at: Date.now(),
-    })
-    setShowSaveModal(false)
-    setNoteSaved(true)
-    setTimeout(() => setNoteSaved(false), 2000)
+    setSaveError(null)
+    setIsSaving(true)
+    try {
+      await window.cuedraft.notes.create({
+        title: noteName.trim(),
+        content,
+        category: noteCategory.trim() || null,
+        created_at: Date.now(),
+      })
+      setShowSaveModal(false)
+      setNoteSaved(true)
+      setTimeout(() => setNoteSaved(false), 2000)
+    } catch (err) {
+      console.error('[CueDraft] Failed to save note:', err)
+      setSaveError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }, [noteName, noteCategory, content])
 
   const handleModalKeyDown = useCallback(
@@ -237,19 +250,26 @@ export function EditBeforeInsertView({ template, onConfirm, onBack }: EditBefore
               </div>
             </div>
 
+            {saveError && (
+              <p className="mt-3 text-[10px] text-red-400 bg-red-400/10 rounded px-2 py-1.5 leading-relaxed">
+                {saveError}
+              </p>
+            )}
+
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setShowSaveModal(false)}
-                className="px-3 py-1.5 text-xs text-t2 hover:text-t1 rounded border border-low transition-colors"
+                disabled={isSaving}
+                className="px-3 py-1.5 text-xs text-t2 hover:text-t1 rounded border border-low transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveNote}
-                disabled={!noteName.trim()}
+                disabled={!noteName.trim() || isSaving}
                 className="px-3 py-1.5 text-xs text-white bg-accent hover:opacity-90 rounded disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
-                Save Note
+                {isSaving ? 'Saving…' : 'Save Note'}
               </button>
             </div>
 

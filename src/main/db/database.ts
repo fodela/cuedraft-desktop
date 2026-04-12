@@ -49,6 +49,15 @@ CREATE TRIGGER IF NOT EXISTS templates_au
     INSERT INTO templates_fts(rowid, title, content)
     VALUES (new.id, new.title, new.content);
   END;
+
+CREATE INDEX IF NOT EXISTS idx_notes_created_at
+  ON notes(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_templates_category
+  ON templates(category);
+
+CREATE INDEX IF NOT EXISTS idx_templates_last_used_use_count
+  ON templates(last_used DESC, use_count DESC);
 `
 
 const SEED_DATA = [

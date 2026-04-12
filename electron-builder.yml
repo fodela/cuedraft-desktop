@@ -16,6 +16,7 @@ asarUnpack:
 win:
   target: nsis
   icon: assets/tray-icon.ico
+  artifactName: "CueDraft-windows.exe"
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
@@ -28,9 +29,11 @@ linux:
     - AppImage
   icon: assets/tray-icon.png
   category: Utility
+  artifactName: "CueDraft-linux.${ext}"
   desktop:
-    Exec: "env ELECTRON_OZONE_PLATFORM_HINT=x11 /opt/cuedraft/cuedraft %U"
-    StartupNotify: "false"
+    entry:
+      Exec: "env ELECTRON_OZONE_PLATFORM_HINT=x11 /opt/cuedraft/cuedraft %U"
+      StartupNotify: "false"
 deb:
   depends:
     - libxtst6

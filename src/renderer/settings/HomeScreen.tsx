@@ -3,6 +3,9 @@ import type { Template } from "../../shared/types";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { formatLastUsed } from "../../shared/formatting";
 import { parseHotkey } from "../../shared/hotkey-utils";
+import { obfuscatePreview } from "../../shared/privacy";
+
+const PAGE_SIZE = 50;
 
 interface HomeScreenProps {
   onEdit: (id: number) => void;
@@ -11,27 +14,48 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [total, setTotal] = useState(0);
   const [hotkey, setHotkey] = useState("Ctrl+Shift+Space");
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkDeletePending, setBulkDeletePending] = useState(false);
+  const [privacyMode, setPrivacyMode] = useState(true);
 
   const fetchTemplates = useCallback(async () => {
-    const all = await window.cuedraft.templates.getAll();
-    setTemplates(all);
+    const result = await window.cuedraft.templates.list({
+      search,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    });
+    setTemplates(result.items);
+    setTotal(result.total);
+  }, [page, search]);
+
+  useEffect(() => {
+    window.cuedraft.settings.get().then((s) => {
+      setHotkey(s.hotkey);
+      setPrivacyMode(s.privacyMode);
+    });
   }, []);
 
   useEffect(() => {
-    fetchTemplates();
-    window.cuedraft.settings.get().then((s) => setHotkey(s.hotkey));
+    const timeout = window.setTimeout(() => {
+      fetchTemplates();
+    }, 120);
+    return () => window.clearTimeout(timeout);
   }, [fetchTemplates]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [templates]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     await window.cuedraft.templates.delete(deleteTarget.id);
     setDeleteTarget(null);
-    fetchTemplates();
+    await fetchTemplates();
   };
 
   const toggleRow = (id: number) => {
@@ -43,27 +67,19 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
   };
 
   const toggleAll = () => {
-    setSelectedIds(allSelected ? new Set() : new Set(filtered.map((t) => t.id)));
+    setSelectedIds(allSelected ? new Set() : new Set(templates.map((t) => t.id)));
   };
 
   const handleBulkDelete = async () => {
-    for (const id of selectedIds) {
-      await window.cuedraft.templates.delete(id);
-    }
+    await window.cuedraft.templates.bulkDelete(Array.from(selectedIds));
     setSelectedIds(new Set());
     setBulkDeletePending(false);
-    fetchTemplates();
+    await fetchTemplates();
   };
 
-  const filtered = templates.filter((t) =>
-    search
-      ? t.title.toLowerCase().includes(search.toLowerCase()) ||
-        (t.category ?? "").toLowerCase().includes(search.toLowerCase())
-      : true,
-  );
-
-  const allSelected = filtered.length > 0 && filtered.every((t) => selectedIds.has(t.id));
+  const allSelected = templates.length > 0 && templates.every((t) => selectedIds.has(t.id));
   const someSelected = selectedIds.size > 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -89,7 +105,10 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search cues..."
               className="bg-raised border border-mid text-t2 text-xs rounded-lg pl-8 pr-4 py-2 w-52 focus:outline-none focus:border-accent placeholder:text-t4"
             />
@@ -171,17 +190,17 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
             )}
           </div>
 
-          {filtered.length === 0 ? (
+          {templates.length === 0 ? (
             <div className="px-4 py-12 text-center text-t4 text-sm bg-surface">
               No templates found.
             </div>
           ) : (
-            filtered.map((t, i) => (
+            templates.map((t, i) => (
               <div
                 key={t.id}
                 className={`grid grid-cols-[32px_1fr_160px_140px_100px_120px] px-4 py-3.5 items-center group hover:bg-raised transition-colors ${
                   selectedIds.has(t.id) ? "bg-raised" : "bg-surface"
-                } ${i < filtered.length - 1 ? "border-b border-low" : ""}`}
+                } ${i < templates.length - 1 ? "border-b border-low" : ""}`}
               >
                 <div className="flex items-center">
                   <input
@@ -196,7 +215,9 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
                     {t.title}
                   </div>
                   <div className="text-xs text-t4 truncate mt-0.5">
-                    {t.content.slice(0, 50).replace(/\n/g, " ")}
+                    {privacyMode
+                      ? obfuscatePreview(t.content.slice(0, 50).replace(/\n/g, " "))
+                      : t.content.slice(0, 50).replace(/\n/g, " ")}
                   </div>
                 </div>
                 <div>
@@ -286,13 +307,26 @@ export function HomeScreen({ onEdit, onCreate }: HomeScreenProps) {
       {/* Footer */}
       <div className="flex items-center justify-between px-8 py-3 border-t border-low shrink-0">
         <span className="text-[10px] tracking-widest uppercase text-t4">
-          © 2026 CueDraft Desktop
+          {total.toLocaleString()} template{total !== 1 ? "s" : ""} total
         </span>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          <span className="text-[10px] tracking-widest uppercase text-t4">
-            System Ready
+        <div className="flex items-center gap-2 text-[10px] text-t4">
+          <button
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1}
+            className="px-2 py-1 rounded border border-low disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <span>
+            Page {page} / {totalPages}
           </span>
+          <button
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages}
+            className="px-2 py-1 rounded border border-low disabled:opacity-40"
+          >
+            Next
+          </button>
         </div>
       </div>
 

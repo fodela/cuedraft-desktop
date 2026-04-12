@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-vi.mock('child_process', () => ({ execSync: vi.fn() }))
+vi.mock('child_process', () => ({ execFileSync: vi.fn() }))
 
 describe('platform', () => {
   const originalPlatform = process.platform
@@ -70,16 +70,16 @@ describe('platform', () => {
   })
 
   describe('hasCommand', () => {
-    it('returns true when execSync succeeds', async () => {
-      const { execSync } = await import('child_process')
-      vi.mocked(execSync).mockImplementation(() => Buffer.from(''))
+    it('returns true when execFileSync succeeds', async () => {
+      const { execFileSync } = await import('child_process')
+      vi.mocked(execFileSync).mockImplementation(() => Buffer.from(''))
       const { hasCommand } = await loadPlatform()
       expect(hasCommand('xdotool')).toBe(true)
     })
 
-    it('returns false when execSync throws', async () => {
-      const { execSync } = await import('child_process')
-      vi.mocked(execSync).mockImplementation(() => { throw new Error('not found') })
+    it('returns false when execFileSync throws', async () => {
+      const { execFileSync } = await import('child_process')
+      vi.mocked(execFileSync).mockImplementation(() => { throw new Error('not found') })
       const { hasCommand } = await loadPlatform()
       expect(hasCommand('xdotool')).toBe(false)
     })
@@ -87,15 +87,15 @@ describe('platform', () => {
 
   describe('hasXdotool / hasWlCopy', () => {
     it('hasXdotool calls hasCommand with "xdotool"', async () => {
-      const { execSync } = await import('child_process')
-      vi.mocked(execSync).mockImplementation(() => Buffer.from(''))
+      const { execFileSync } = await import('child_process')
+      vi.mocked(execFileSync).mockImplementation(() => Buffer.from(''))
       const { hasXdotool } = await loadPlatform()
       expect(hasXdotool()).toBe(true)
     })
 
     it('hasWlCopy calls hasCommand with "wl-copy"', async () => {
-      const { execSync } = await import('child_process')
-      vi.mocked(execSync).mockImplementation(() => Buffer.from(''))
+      const { execFileSync } = await import('child_process')
+      vi.mocked(execFileSync).mockImplementation(() => Buffer.from(''))
       const { hasWlCopy } = await loadPlatform()
       expect(hasWlCopy()).toBe(true)
     })

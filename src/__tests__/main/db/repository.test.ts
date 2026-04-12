@@ -3,6 +3,7 @@ import Database from 'better-sqlite3'
 import { SCHEMA, _setDatabaseForTesting, closeDatabase } from '../../../main/db/database'
 import {
   getAll,
+  list,
   search,
   getCategories,
   getByCategory,
@@ -10,6 +11,7 @@ import {
   create,
   update,
   remove,
+  removeMany,
   recordUsage,
 } from '../../../main/db/repository'
 
@@ -88,6 +90,43 @@ describe('search', () => {
   it('returns empty array when no templates match', () => {
     insertTemplate({ title: 'Hello World' })
     expect(search('xyz_nonexistent')).toEqual([])
+  })
+
+  it('returns empty array for invalid FTS syntax instead of throwing', () => {
+    insertTemplate({ title: 'Hello World' })
+    expect(() => search('"')).not.toThrow()
+    expect(search('"')).toEqual([])
+  })
+
+  it('tokenizes punctuation-heavy searches safely', () => {
+    insertTemplate({ title: 'Hello World' })
+    expect(search('hello-world')).toHaveLength(1)
+  })
+})
+
+describe('list', () => {
+  it('returns paginated results with a total count', () => {
+    insertTemplate({ title: 'A' })
+    insertTemplate({ title: 'B' })
+    const result = list({ search: '', category: null, limit: 1, offset: 0 })
+    expect(result.total).toBe(2)
+    expect(result.items).toHaveLength(1)
+  })
+
+  it('filters by category', () => {
+    insertTemplate({ title: 'Medical Note', category: 'Medical' })
+    insertTemplate({ title: 'Legal Note', category: 'Legal' })
+    const result = list({ search: '', category: 'Medical', limit: 50, offset: 0 })
+    expect(result.total).toBe(1)
+    expect(result.items[0]?.category).toBe('Medical')
+  })
+
+  it('filters by search query', () => {
+    insertTemplate({ title: 'Pain History' })
+    insertTemplate({ title: 'Discharge Summary' })
+    const result = list({ search: 'Pain', category: null, limit: 50, offset: 0 })
+    expect(result.total).toBe(1)
+    expect(result.items[0]?.title).toBe('Pain History')
   })
 })
 
@@ -206,6 +245,14 @@ describe('remove', () => {
     const t = insertTemplate({ title: 'ToBeDeleted' })
     remove(t.id)
     expect(search('ToBeDeleted')).toHaveLength(0)
+  })
+
+  it('removeMany deletes all matching templates in one call', () => {
+    const t1 = insertTemplate({ title: 'Bulk A' })
+    const t2 = insertTemplate({ title: 'Bulk B' })
+    removeMany([t1.id, t2.id])
+    expect(getById(t1.id)).toBeUndefined()
+    expect(getById(t2.id)).toBeUndefined()
   })
 })
 

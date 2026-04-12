@@ -1,5 +1,11 @@
-import type { Template } from '../../shared/types'
+import type { ListQuery, ListResult, Template } from '../../shared/types'
 import { getDatabase } from './database'
+
+function buildTemplateFtsQuery(query: string): string | null {
+  const tokens = query.match(/[\p{L}\p{N}_]+/gu) ?? []
+  if (tokens.length === 0) return null
+  return tokens.map((token) => `${token}*`).join(' ')
+}
 
 export function getAll(): Template[] {
   const db = getDatabase()
@@ -11,6 +17,8 @@ export function getAll(): Template[] {
 export function search(q: string): Template[] {
   const db = getDatabase()
   if (!q.trim()) return getAll()
+  const ftsQuery = buildTemplateFtsQuery(q)
+  if (!ftsQuery) return []
   return db
     .prepare(
       `SELECT t.* FROM templates t
@@ -18,7 +26,54 @@ export function search(q: string): Template[] {
        WHERE templates_fts MATCH ?
        ORDER BY rank`
     )
-    .all(q + '*') as Template[]
+    .all(ftsQuery) as Template[]
+}
+
+export function list(query: Required<ListQuery>): ListResult<Template> {
+  const db = getDatabase()
+  const conditions: string[] = []
+  const params: Array<string | number> = []
+
+  if (query.category) {
+    conditions.push('t.category = ?')
+    params.push(query.category)
+  }
+
+  const ftsQuery = buildTemplateFtsQuery(query.search)
+  if (query.search.trim() && !ftsQuery) {
+    return { items: [], total: 0 }
+  }
+
+  const join = ftsQuery ? 'JOIN templates_fts f ON t.id = f.rowid' : ''
+  if (ftsQuery) {
+    conditions.push('templates_fts MATCH ?')
+    params.push(ftsQuery)
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+  const countRow = db
+    .prepare(
+      `SELECT COUNT(*) as count
+       FROM templates t
+       ${join}
+       ${whereClause}`
+    )
+    .get(...params) as { count: number }
+
+  const items = db
+    .prepare(
+      `SELECT t.*
+       FROM templates t
+       ${join}
+       ${whereClause}
+       ORDER BY ${
+         ftsQuery ? 'rank, ' : ''
+       }last_used DESC NULLS LAST, use_count DESC
+       LIMIT ? OFFSET ?`
+    )
+    .all(...params, query.limit, query.offset) as Template[]
+
+  return { items, total: countRow.count }
 }
 
 export function getCategories(): string[] {
@@ -59,6 +114,17 @@ export function update(data: Template): Template {
 export function remove(id: number): void {
   const db = getDatabase()
   db.prepare('DELETE FROM templates WHERE id = ?').run(id)
+}
+
+export function removeMany(ids: number[]): void {
+  if (ids.length === 0) return
+
+  const db = getDatabase()
+  const placeholders = ids.map(() => '?').join(', ')
+
+  db.transaction((templateIds: number[]) => {
+    db.prepare(`DELETE FROM templates WHERE id IN (${placeholders})`).run(...templateIds)
+  })(ids)
 }
 
 export function recordUsage(id: number): void {

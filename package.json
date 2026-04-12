@@ -2,6 +2,15 @@
   "name": "cuedraft-desktop",
   "version": "0.1.0",
   "description": "System-wide text template picker",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fodela/cuedraft-desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fodela/cuedraft-desktop/issues"
+  },
+  "homepage": "https://github.com/fodela/cuedraft-desktop#readme",
   "main": "out/main/index.js",
   "private": true,
   "scripts": {
@@ -23,11 +32,11 @@
   "dependencies": {
     "@jitsi/robotjs": "^0.6.21",
     "better-sqlite3": "11",
-    "electron": "32",
     "react": "19",
     "react-dom": "19"
   },
   "devDependencies": {
+    "electron": "32",
     "@tailwindcss/vite": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

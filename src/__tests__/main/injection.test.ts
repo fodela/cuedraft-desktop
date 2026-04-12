@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { injectText } from '../../main/injection'
 
 // Mock these before any imports so injection.ts sees the mocks
-vi.mock('child_process', () => ({ execSync: vi.fn() }))
+vi.mock('child_process', () => ({ execFileSync: vi.fn() }))
 vi.mock('@jitsi/robotjs', () => ({
   keyTap: vi.fn(),
   keyToggle: vi.fn(),
@@ -69,10 +69,10 @@ describe('injection', () => {
 
     it('falls back to clipboard when both robotjs and xdotool fail', async () => {
       const robotjs = await import('@jitsi/robotjs')
-      const { execSync } = await import('child_process')
+      const { execFileSync } = await import('child_process')
       const { clipboard } = await import('electron')
       vi.mocked(robotjs.typeString).mockImplementation(() => { throw new Error('fail') })
-      vi.mocked(execSync).mockImplementation(() => { throw new Error('no tool') })
+      vi.mocked(execFileSync).mockImplementation(() => { throw new Error('no tool') })
       const promise = injectText('short text')
       await vi.runAllTimersAsync()
       await promise
@@ -99,20 +99,23 @@ describe('injection', () => {
       delete process.env.WAYLAND_DISPLAY
     })
 
-    it('calls execSync with wl-copy when available', async () => {
-      const { execSync } = await import('child_process')
-      vi.mocked(execSync).mockImplementation(() => Buffer.from(''))
+    it('calls execFileSync with wl-copy when available', async () => {
+      const { execFileSync } = await import('child_process')
+      vi.mocked(execFileSync).mockImplementation(() => Buffer.from(''))
       const promise = injectText('short')
       await vi.runAllTimersAsync()
       await promise
-      const calls = vi.mocked(execSync).mock.calls.map((c) => String(c[0]))
-      expect(calls.some((c) => c.includes('wl-copy'))).toBe(true)
+      expect(execFileSync).toHaveBeenCalledWith(
+        'wl-copy',
+        ['--'],
+        expect.objectContaining({ input: 'short' })
+      )
     })
 
     it('falls back to clipboard.writeText when wl-copy is not available', async () => {
-      const { execSync } = await import('child_process')
+      const { execFileSync } = await import('child_process')
       const { clipboard } = await import('electron')
-      vi.mocked(execSync).mockImplementation(() => { throw new Error('not found') })
+      vi.mocked(execFileSync).mockImplementation(() => { throw new Error('not found') })
       const promise = injectText('short')
       await vi.runAllTimersAsync()
       await promise
@@ -159,6 +162,24 @@ describe('injection', () => {
       await vi.advanceTimersByTimeAsync(80)
       await promise
       expect(robotjs.typeString).toHaveBeenCalled()
+    })
+
+    it('restores the clipboard after a successful paste path', async () => {
+      setPlatform('win32')
+      const robotjs = await import('@jitsi/robotjs')
+      const { clipboard } = await import('electron')
+
+      vi.mocked(robotjs.typeString).mockImplementation(() => { throw new Error('fail') })
+      vi.mocked(clipboard.availableFormats).mockReturnValue(['text/plain'])
+      vi.mocked(clipboard.readBuffer).mockReturnValue(Buffer.from('previous'))
+
+      const promise = injectText('hello')
+      await vi.advanceTimersByTimeAsync(80)
+      await promise
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(clipboard.clear).toHaveBeenCalled()
+      expect(clipboard.writeBuffer).toHaveBeenCalledWith('text/plain', Buffer.from('previous'))
     })
   })
 })

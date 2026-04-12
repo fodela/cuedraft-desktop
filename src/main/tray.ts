@@ -5,6 +5,8 @@ import { togglePicker, createSettingsWindow } from './windows'
 let tray: Tray | null = null
 
 export function createTray(): Tray {
+  if (tray) return tray
+
   const iconPath = join(__dirname, '../../assets/logo.png')
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 24, height: 24 })
 
@@ -36,4 +38,21 @@ export function createTray(): Tray {
   })
 
   return tray
+}
+
+export function destroyTray(): void {
+  tray?.destroy()
+  tray = null
+}
+
+export function syncTrayVisibility(showInTray: boolean): void {
+  if (showInTray) {
+    createTray()
+  } else {
+    destroyTray()
+  }
+}
+
+export function hasTray(): boolean {
+  return tray !== null
 }

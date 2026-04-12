@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('fs', () => ({
+  mkdirSync: vi.fn(),
   readFileSync: vi.fn(),
+  renameSync: vi.fn(),
   writeFileSync: vi.fn(),
   existsSync: vi.fn(() => false),
 }))
@@ -59,12 +61,13 @@ describe('settings-store', () => {
 
   describe('setSettings', () => {
     it('writes merged settings to file', async () => {
-      const { existsSync, readFileSync, writeFileSync } = await import('fs')
+      const { existsSync, writeFileSync, renameSync } = await import('fs')
       vi.mocked(existsSync).mockReturnValue(false)
       setSettings({ hotkey: 'Ctrl+Alt+T' })
       expect(writeFileSync).toHaveBeenCalled()
       const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string)
       expect(written.hotkey).toBe('Ctrl+Alt+T')
+      expect(renameSync).toHaveBeenCalled()
     })
 
     it('returns the merged Settings object', async () => {
@@ -86,10 +89,11 @@ describe('settings-store', () => {
 
   describe('resetSettings', () => {
     it('writes DEFAULTS to file', async () => {
-      const { writeFileSync } = await import('fs')
+      const { writeFileSync, renameSync } = await import('fs')
       resetSettings()
       const written = JSON.parse(vi.mocked(writeFileSync).mock.calls[0][1] as string)
       expect(written).toMatchObject(DEFAULTS)
+      expect(renameSync).toHaveBeenCalled()
     })
 
     it('returns a copy of DEFAULTS', () => {

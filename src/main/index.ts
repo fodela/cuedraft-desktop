@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { createTray } from './tray'
+import { syncTrayVisibility } from './tray'
 import { createPickerWindow, togglePicker } from './windows'
 import { registerHotkey, unregisterHotkey } from './hotkey'
 import { getDatabase, closeDatabase } from './db/database'
@@ -17,12 +17,13 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerNoteHandlers()
 
+  const settings = getSettings()
+
   // Create tray and picker window
-  createTray()
+  syncTrayVisibility(settings.showInTray)
   createPickerWindow()
 
   // Register global hotkey
-  const settings = getSettings()
   const registered = registerHotkey(settings.hotkey, () => {
     togglePicker()
   })

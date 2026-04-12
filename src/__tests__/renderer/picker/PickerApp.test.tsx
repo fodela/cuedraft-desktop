@@ -11,7 +11,13 @@ const SAMPLE_TEMPLATES: Template[] = [
 ]
 
 function setupTemplates(templates: Template[] = SAMPLE_TEMPLATES) {
-  ;(window.cuedraft.templates.getAll as ReturnType<typeof vi.fn>).mockResolvedValue(templates)
+  ;(window.cuedraft.templates.list as ReturnType<typeof vi.fn>).mockResolvedValue({
+    items: templates,
+    total: templates.length,
+  })
+  ;(window.cuedraft.templates.getCategories as ReturnType<typeof vi.fn>).mockResolvedValue(
+    [...new Set(templates.map((template) => template.category).filter(Boolean))]
+  )
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
@@ -112,8 +118,8 @@ describe('PickerApp', () => {
     setupTemplates()
     render(<PickerApp />)
     await waitFor(() => {
-      expect(screen.getByText('Greetings')).toBeInTheDocument()
-      expect(screen.getByText('Email')).toBeInTheDocument()
+      expect(screen.getAllByText('Greetings').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Email').length).toBeGreaterThan(0)
     })
   })
 })

@@ -3,6 +3,7 @@ import { IPC } from '../../../shared/types'
 
 vi.mock('../../../main/db/repository', () => ({
   getAll: vi.fn(() => []),
+  list: vi.fn(() => ({ items: [], total: 0 })),
   search: vi.fn(() => []),
   getCategories: vi.fn(() => []),
   getByCategory: vi.fn(() => []),
@@ -10,10 +11,26 @@ vi.mock('../../../main/db/repository', () => ({
   create: vi.fn((d: unknown) => ({ id: 1, ...d })),
   update: vi.fn((d: unknown) => d),
   remove: vi.fn(),
+  removeMany: vi.fn(),
   recordUsage: vi.fn(),
 }))
 vi.mock('../../../main/windows', () => ({ hidePicker: vi.fn() }))
 vi.mock('../../../main/injection', () => ({ injectText: vi.fn(() => Promise.resolve()) }))
+vi.mock('../../../main/db/settings-store', () => ({
+  getSettings: vi.fn(() => ({
+    hotkey: 'Ctrl+Shift+Space',
+    injectionMethod: 'auto',
+    launchAtStartup: false,
+    showInTray: true,
+    privacyMode: true,
+    vimMode: false,
+    theme: 'dark',
+    accentColor: 'teal',
+    windowOpacity: 92,
+    borderRadius: 'subtle',
+    font: 'inter',
+  })),
+}))
 
 describe('registerTemplateHandlers', () => {
   // Collect registered handlers
@@ -36,6 +53,7 @@ describe('registerTemplateHandlers', () => {
 
   it('registers handlers for all template IPC channels', () => {
     expect(handlers.has(IPC.TEMPLATES_GET_ALL)).toBe(true)
+    expect(handlers.has(IPC.TEMPLATES_LIST)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_SEARCH)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_GET_CATEGORIES)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_GET_BY_CATEGORY)).toBe(true)
@@ -43,6 +61,7 @@ describe('registerTemplateHandlers', () => {
     expect(handlers.has(IPC.TEMPLATES_CREATE)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_UPDATE)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_DELETE)).toBe(true)
+    expect(handlers.has(IPC.TEMPLATES_BULK_DELETE)).toBe(true)
     expect(handlers.has(IPC.TEMPLATES_INJECT)).toBe(true)
   })
 
@@ -50,6 +69,17 @@ describe('registerTemplateHandlers', () => {
     const repo = await import('../../../main/db/repository')
     await handlers.get(IPC.TEMPLATES_GET_ALL)!(null)
     expect(repo.getAll).toHaveBeenCalled()
+  })
+
+  it('TEMPLATES_LIST handler calls repo.list(query)', async () => {
+    const repo = await import('../../../main/db/repository')
+    await handlers.get(IPC.TEMPLATES_LIST)!(null, { search: 'pain', limit: 25, offset: 50 })
+    expect(repo.list).toHaveBeenCalledWith({
+      search: 'pain',
+      category: null,
+      limit: 25,
+      offset: 50,
+    })
   })
 
   it('TEMPLATES_SEARCH handler calls repo.search(q)', async () => {
@@ -96,12 +126,18 @@ describe('registerTemplateHandlers', () => {
     expect(repo.remove).toHaveBeenCalledWith(3)
   })
 
+  it('TEMPLATES_BULK_DELETE handler calls repo.removeMany(ids)', async () => {
+    const repo = await import('../../../main/db/repository')
+    await handlers.get(IPC.TEMPLATES_BULK_DELETE)!(null, { ids: [3, 5, 5] })
+    expect(repo.removeMany).toHaveBeenCalledWith([3, 5])
+  })
+
   it('TEMPLATES_INJECT calls hidePicker then injectText', async () => {
     const { hidePicker } = await import('../../../main/windows')
     const { injectText } = await import('../../../main/injection')
     await handlers.get(IPC.TEMPLATES_INJECT)!(null, { content: 'Hello', id: 1 })
     expect(hidePicker).toHaveBeenCalled()
-    expect(injectText).toHaveBeenCalledWith('Hello')
+    expect(injectText).toHaveBeenCalledWith('Hello', 'auto')
   })
 
   it('TEMPLATES_INJECT calls recordUsage when id is provided', async () => {

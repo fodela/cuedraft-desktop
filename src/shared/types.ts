@@ -29,8 +29,21 @@ export interface Settings {
   font: 'inter' | 'geist' | 'jetbrains-mono' | 'system-ui'
 }
 
+export interface ListQuery {
+  search?: string
+  category?: string | null
+  limit?: number
+  offset?: number
+}
+
+export interface ListResult<T> {
+  items: T[]
+  total: number
+}
+
 export const IPC = {
   TEMPLATES_GET_ALL: 'templates:getAll',
+  TEMPLATES_LIST: 'templates:list',
   TEMPLATES_SEARCH: 'templates:search',
   TEMPLATES_GET_CATEGORIES: 'templates:getCategories',
   TEMPLATES_GET_BY_CATEGORY: 'templates:getByCategory',
@@ -38,12 +51,15 @@ export const IPC = {
   TEMPLATES_CREATE: 'templates:create',
   TEMPLATES_UPDATE: 'templates:update',
   TEMPLATES_DELETE: 'templates:delete',
+  TEMPLATES_BULK_DELETE: 'templates:bulkDelete',
   TEMPLATES_INJECT: 'templates:inject',
   NOTES_GET_ALL: 'notes:getAll',
+  NOTES_LIST: 'notes:list',
   NOTES_GET_BY_ID: 'notes:getById',
   NOTES_CREATE: 'notes:create',
   NOTES_UPDATE: 'notes:update',
   NOTES_DELETE: 'notes:delete',
+  NOTES_BULK_DELETE: 'notes:bulkDelete',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_RESET: 'settings:reset',
