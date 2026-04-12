@@ -17,13 +17,18 @@ jobs:
         include:
           - os: windows-latest
             script: dist:win
-            artifact: "dist/*.exe"
+            artifact: |
+              dist/*.exe
           - os: ubuntu-latest
             script: dist:linux
-            artifact: "dist/*.{deb,AppImage}"
+            artifact: |
+              dist/*.deb
+              dist/*.AppImage
           - os: macos-latest
             script: dist:mac
-            artifact: "dist/*.dmg"
+            artifact: |
+              dist/*.dmg
+              dist/*.zip
 
     runs-on: ${{ matrix.os }}
 

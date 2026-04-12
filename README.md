@@ -75,6 +75,23 @@ npm run dist:mac
 - `npm run test:coverage`: run Vitest with coverage
 - `npm run test:e2e`: run Playwright end-to-end tests
 
+## Creating a GitHub Release
+
+Releases are automated via GitHub Actions (`.github/workflows/release.yml`).
+
+1. Update version in `package.json` (for example `0.1.0` -> `0.1.1`).
+2. Commit and push to `main`.
+3. Create and push a version tag:
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+4. Wait for the `Release` workflow to finish.
+
+The workflow builds installers for Windows, Linux, and macOS, then publishes them to the GitHub Release for that tag.
+
 ## Data and Privacy
 
 CueDraft is privacy-first by design:

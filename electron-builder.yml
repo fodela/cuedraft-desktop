@@ -15,7 +15,7 @@ asarUnpack:
 # ── Windows ──────────────────────────────────────────────
 win:
   target: nsis
-  icon: assets/tray-icon.ico
+  icon: assets/logo.ico
   artifactName: "CueDraft-windows.exe"
 nsis:
   oneClick: false
@@ -43,7 +43,7 @@ mac:
   target:
     - dmg       # drag-to-Applications disk image (most common)
     - zip       # plain zip for auto-updater / manual install
-  icon: assets/tray-icon.icns
+  icon: assets/logo.png
   # Required so robotjs can inject keystrokes via the Accessibility API
   extendInfo:
     NSAccessibilityUsageDescription: >
@@ -53,7 +53,6 @@ mac:
   # notarize: true
 dmg:
   title: "${productName} ${version}"
-  background: assets/dmg-background.png   # optional, 540×380 px PNG
   contents:
     - x: 130
       y: 220
