@@ -27,16 +27,22 @@
     "dist": "npm run build && electron-builder --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:linux": "npm run build && electron-builder --linux --publish never",
-    "dist:mac": "npm run build && electron-builder --mac --publish never"
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "release": "release-it",
+    "release:patch": "release-it patch",
+    "release:minor": "release-it minor",
+    "release:major": "release-it major"
   },
   "dependencies": {
     "@jitsi/robotjs": "^0.6.21",
     "better-sqlite3": "11",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
     "react": "19",
     "react-dom": "19"
   },
   "devDependencies": {
-    "electron": "32",
+    "@release-it/conventional-changelog": "^10.0.6",
     "@tailwindcss/vite": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -47,10 +53,12 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4",
     "@vitest/coverage-v8": "^4.1.0",
+    "electron": "32",
     "electron-builder": "^26.8.1",
     "electron-rebuild": "^3.2.9",
     "electron-vite": "^5.0.0",
     "happy-dom": "^20.8.4",
+    "release-it": "^19.2.4",
     "tailwindcss": "4",
     "typescript": "^5.9.3",
     "vite": "6",

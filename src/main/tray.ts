@@ -11,7 +11,7 @@ export function createTray(): Tray {
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 24, height: 24 })
 
   tray = new Tray(icon)
-  tray.setToolTip('CueDraft')
+  tray.setToolTip('CueDraft (Alpha)')
 
   const contextMenu = Menu.buildFromTemplate([
     {

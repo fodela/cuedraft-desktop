@@ -16,19 +16,22 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            script: dist:win
+            platform: win
             artifact: |
               dist/*.exe
+              dist/latest.yml
           - os: ubuntu-latest
-            script: dist:linux
+            platform: linux
             artifact: |
               dist/*.deb
               dist/*.AppImage
+              dist/latest-linux.yml
           - os: macos-latest
-            script: dist:mac
+            platform: mac
             artifact: |
               dist/*.dmg
               dist/*.zip
+              dist/latest-mac.yml
 
     runs-on: ${{ matrix.os }}
 
@@ -47,12 +50,21 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # macOS: rebuild native modules against the Electron headers
       - name: Rebuild native modules
         run: npx electron-rebuild -f -w better-sqlite3 --only better-sqlite3
 
+      - name: Run tests
+        run: npm test
+
       - name: Build & package
-        run: npm run ${{ matrix.script }}
+        shell: bash
+        run: |
+          npm run build
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            npx electron-builder --${{ matrix.platform }} --publish always
+          else
+            npx electron-builder --${{ matrix.platform }} --publish never
+          fi
         env:
           # Provide these secrets in GitHub repo settings for signed macOS builds
           # CSC_LINK: ${{ secrets.APPLE_CERTIFICATE }}

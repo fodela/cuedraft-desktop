@@ -28,9 +28,17 @@ export function AboutScreen() {
           </div>
           <div className="ml-auto text-right shrink-0">
             <span className="px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase bg-accent-dim text-accent rounded-lg border border-accent/20">
-              Alpha
+              Public Alpha
             </span>
-            <p className="text-xs text-t3 mt-2 font-mono">v0.1.0</p>
+            <p className="text-xs text-t3 mt-2 font-mono">{__APP_VERSION__}</p>
+            <p className="text-[10px] text-t3 mt-1 max-w-[160px]">
+              Expect rough edges. <a
+                href="https://github.com/fodela/cuedraft-desktop/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-t2"
+              >Report bugs ↗</a>
+            </p>
           </div>
         </div>
       </section>

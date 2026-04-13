@@ -12,6 +12,11 @@ asarUnpack:
   - "**/node_modules/better-sqlite3/**"
   - "**/node_modules/@jitsi/robotjs/**"
 
+publish:
+  - provider: github
+    owner: fodela
+    repo: cuedraft-desktop
+
 # ── Windows ──────────────────────────────────────────────
 win:
   target: nsis

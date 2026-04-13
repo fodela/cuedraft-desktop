@@ -190,7 +190,7 @@ export function SettingsApp() {
                 CUEDRAFT
               </div>
               <div className="text-[10px] tracking-widest text-t3 mt-0.5 uppercase">
-                Alpha v0.1.
+                Alpha · {__APP_VERSION__}
               </div>
             </div>
           </div>

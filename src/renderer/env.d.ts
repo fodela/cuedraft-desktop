@@ -5,6 +5,8 @@ declare module '*.png' {
   export default src
 }
 
+declare const __APP_VERSION__: string
+
 declare global {
   interface Window {
     cuedraft: CueDraftAPI

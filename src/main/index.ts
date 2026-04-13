@@ -7,6 +7,7 @@ import { registerTemplateHandlers } from './ipc/templates'
 import { registerSettingsHandlers } from './ipc/settings'
 import { registerNoteHandlers } from './ipc/notes'
 import { getSettings } from './db/settings-store'
+import { setupAutoUpdater } from './updater'
 
 app.whenReady().then(() => {
   // Initialize database (creates schema + seed data on first launch)
@@ -31,6 +32,9 @@ app.whenReady().then(() => {
   if (!registered) {
     console.error(`Failed to register global hotkey: ${settings.hotkey}`)
   }
+
+  // Check for updates in the background (no-op in dev and on unsigned macOS)
+  setupAutoUpdater()
 })
 
 app.on('window-all-closed', (e: Event) => {
