@@ -41,9 +41,7 @@ linux:
   category: Utility
   artifactName: "CueDraft-linux.${ext}"
   desktop:
-    entry:
-      Exec: "env ELECTRON_OZONE_PLATFORM_HINT=x11 /opt/cuedraft/cuedraft %U"
-      StartupNotify: "false"
+    StartupNotify: "false"
 deb:
   depends:
     - libxtst6
