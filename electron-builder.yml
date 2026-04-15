@@ -20,7 +20,7 @@ publish:
 # ── Windows ──────────────────────────────────────────────
 win:
   target: nsis
-  icon: assets/logo.ico
+  icon: assets/logo.png
   artifactName: "CueDraft-windows.exe"
   # Code signing — uncomment once you have a certificate.
   # Options: DigiCert (.p12 via WIN_CSC_LINK env var) or Azure Trusted Signing.
@@ -37,7 +37,7 @@ linux:
   target:
     - deb
     - AppImage
-  icon: assets/tray-icon.png
+  icon: assets/logo.png
   category: Utility
   artifactName: "CueDraft-linux.${ext}"
   executableName: cuedraft
