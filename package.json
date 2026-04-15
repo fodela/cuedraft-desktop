@@ -2,7 +2,10 @@
   "name": "cuedraft-desktop",
   "version": "0.0.1",
   "description": "System-wide text template picker",
-  "author": "fodela",
+  "author": {
+    "name": "fodela",
+    "email": "fodela@users.noreply.github.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
