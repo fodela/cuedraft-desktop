@@ -91,6 +91,7 @@ jobs:
         run: sudo apt-get install -y libxtst-dev libpng-dev
 
       - name: Install dependencies
+        shell: bash
         run: |
           rm -f package-lock.json
           npm install
