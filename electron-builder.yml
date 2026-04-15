@@ -22,6 +22,11 @@ win:
   target: nsis
   icon: assets/logo.ico
   artifactName: "CueDraft-windows.exe"
+  # Code signing — uncomment once you have a certificate.
+  # Options: DigiCert (.p12 via WIN_CSC_LINK env var) or Azure Trusted Signing.
+  # signingHashAlgorithms:
+  #   - sha256
+  # publisherName: "Your Name or Company"   # must match the certificate CN
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
@@ -53,9 +58,10 @@ mac:
   extendInfo:
     NSAccessibilityUsageDescription: >
       CueDraft needs Accessibility access to type text into other apps.
-  # Uncomment and fill in once you have an Apple Developer account:
+  # Code signing & notarization — uncomment once you have an Apple Developer account.
   # identity: "Developer ID Application: Your Name (TEAMID)"
-  # notarize: true
+  # notarize:
+  #   teamId: ${APPLE_TEAM_ID}    # reads from env var set in CI secrets
 dmg:
   title: "${productName} ${version}"
   contents:

@@ -6,7 +6,9 @@
     "pushArgs": ["--follow-tags"]
   },
   "github": {
-    "release": false
+    "release": true,
+    "releaseName": "v${version}",
+    "draft": true
   },
   "npm": {
     "publish": false
