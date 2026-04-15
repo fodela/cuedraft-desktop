@@ -4,28 +4,82 @@ on:
   push:
     tags:
       - "v*"           # trigger on version tags, e.g. v1.0.0
-  workflow_dispatch:   # allow manual runs
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to re-release (e.g. v0.0.1). Required to publish artifacts.'
+        required: false
+        type: string
+      platform:
+        description: 'Platform(s) to build. Use "all" or leave blank to build all three.'
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - win
+          - linux
+          - mac
 
 permissions:
   contents: write      # needed to upload release assets
 
 jobs:
+  # Dynamically build the matrix so a re-release can target a single platform.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      should_publish: ${{ steps.set-matrix.outputs.should_publish }}
+      ref: ${{ steps.set-matrix.outputs.ref }}
+    steps:
+      - name: Resolve matrix and publish flag
+        id: set-matrix
+        env:
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          ALL='[{"os":"windows-latest","platform":"win"},{"os":"ubuntu-latest","platform":"linux"},{"os":"macos-latest","platform":"mac"}]'
+          WIN='[{"os":"windows-latest","platform":"win"}]'
+          LINUX='[{"os":"ubuntu-latest","platform":"linux"}]'
+          MAC='[{"os":"macos-latest","platform":"mac"}]'
+
+          case "$INPUT_PLATFORM" in
+            win)   MATRIX=$WIN   ;;
+            linux) MATRIX=$LINUX ;;
+            mac)   MATRIX=$MAC   ;;
+            *)     MATRIX=$ALL   ;;
+          esac
+
+          echo "matrix={\"include\":$MATRIX}" >> "$GITHUB_OUTPUT"
+
+          # Publish when triggered by a tag push OR when a tag is supplied via input
+          if [[ "$GITHUB_REF" == refs/tags/* ]] || [[ -n "$INPUT_TAG" ]]; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Ref to check out: supplied tag takes priority over the push ref
+          if [[ -n "$INPUT_TAG" ]]; then
+            echo "ref=refs/tags/$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_REF" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: setup
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-          - os: ubuntu-latest
-            platform: linux
-          - os: macos-latest
-            platform: mac
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.outputs.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -49,14 +103,10 @@ jobs:
 
       - name: Build & package
         shell: bash
-        run: |
-          npm run build
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            npx electron-builder --${{ matrix.platform }} --publish always
-          else
-            npx electron-builder --${{ matrix.platform }} --publish never
-          fi
         env:
+          SHOULD_PUBLISH: ${{ needs.setup.outputs.should_publish }}
+          PLATFORM: ${{ matrix.platform }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # ── macOS code signing & notarization ──────────────────────────
           # Uncomment once you have an Apple Developer account.
           # Add each as a secret in GitHub → Settings → Secrets → Actions.
@@ -69,15 +119,66 @@ jobs:
           # Uncomment once you have a Windows certificate (DigiCert / Azure Trusted Signing).
           # WIN_CSC_LINK: ${{ secrets.WIN_CERTIFICATE }}        # base64-encoded .p12
           # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CERTIFICATE_PASSWORD }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run build
+          if [ "$SHOULD_PUBLISH" = "true" ]; then
+            npx electron-builder "--$PLATFORM" --publish always
+          else
+            npx electron-builder "--$PLATFORM" --publish never
+          fi
 
-  # Runs after all three build jobs succeed; converts the draft release
-  # (created by release-it) to a published release.
+      - name: Report build result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PLATFORM: ${{ matrix.platform }}
+          GIT_REF: ${{ needs.setup.outputs.ref }}
+          GIT_SHA: ${{ github.sha }}
+          RUNNER_OS: ${{ runner.os }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "## ✅ Build succeeded: $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## ❌ Build failed: $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          printf "| Field | Value |\n|-------|-------|\n| Ref | \`%s\` |\n| Commit | \`%s\` |\n| Runner | %s |\n" \
+            "$GIT_REF" "$GIT_SHA" "$RUNNER_OS" >> "$GITHUB_STEP_SUMMARY"
+
+  # Runs after all build jobs succeed.
+  # On a normal tag push this un-drafts the release.
+  # On a re-release dispatch the release already exists, so this is a no-op
+  # (softprops/action-gh-release will update it without changing its published state).
   publish:
-    needs: build
+    needs: [setup, build]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: needs.setup.outputs.should_publish == 'true'
     steps:
+      - name: Resolve effective tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            echo "name=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.name }}
           draft: false
+
+      - name: Report publish result
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          TAG_NAME: ${{ steps.tag.outputs.name }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "## 🚀 Release published: $TAG_NAME" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## ❌ Publish failed: $TAG_NAME" >> "$GITHUB_STEP_SUMMARY"
+          fi

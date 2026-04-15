@@ -40,6 +40,7 @@ linux:
   icon: assets/tray-icon.png
   category: Utility
   artifactName: "CueDraft-linux.${ext}"
+  executableName: cuedraft
   desktop:
     StartupNotify: "false"
 deb:
